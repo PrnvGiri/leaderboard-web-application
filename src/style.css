@@ -322,16 +322,45 @@ body {
 }
 
 /* Responsive */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 2.5rem;
+  }
   .podium-container {
     gap: 0.5rem;
-    height: 320px;
+    height: 300px; 
   }
-  .podium-item { width: 110px; }
-  .podium-item.rank-1 .podium-avatar { width: 80px; height: 80px; font-size: 2rem; }
+  .podium-item { width: 31%; } 
+  .podium-item.rank-1 .podium-info { height: 160px; }
+  .podium-item.rank-2 .podium-info { height: 120px; }
+  .podium-item.rank-3 .podium-info { height: 100px; }
+  
+  .podium-item.rank-1 .podium-avatar { width: 75px; height: 75px; font-size: 2rem; }
   .podium-avatar { width: 60px; height: 60px; font-size: 1.5rem; }
-  .podium-name { font-size: 0.85rem; }
+  .podium-name { font-size: 0.85rem; padding: 0 2px; }
+  .podium-score { font-size: 1.4rem; }
+  .rank-badge { width: 26px; height: 26px; font-size: 0.9rem; }
   
   .list-header { display: none; }
+  .list-container { padding: 1rem; }
+  .list-item { padding: 0.8rem 1rem; }
   .rank-col { width: 40px; }
+  .list-item .score-col { font-size: 1.1rem; }
+}
+
+@media (max-width: 480px) {
+  #app { padding: 1rem 0.5rem; }
+  .header h1 { font-size: 2rem; }
+  .header p { font-size: 0.95rem; }
+  .brand-logo { max-width: 180px; }
+  
+  .podium-item { width: 32%; }
+  .podium-item.rank-1 .podium-avatar { width: 65px; height: 65px; font-size: 1.8rem; }
+  .podium-avatar { width: 50px; height: 50px; font-size: 1.2rem; }
+  .podium-name { font-size: 0.75rem; }
+  .podium-score { font-size: 1.2rem; }
+  
+  .list-item .name-col { gap: 0.5rem; font-size: 0.9rem; }
+  .list-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
+  .list-item .score-col { font-size: 1rem; }
 }
