@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IST Bootcamp Leaderboard</title>
+    <!-- Google Fonts for Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <img src="/ISTLogo.png" alt="IST Logo" class="brand-logo" />
+        <h1>IST Bootcamp</h1>
+        <p>Leaderboard & Real-time Scoring</p>
+      </header>
+
+      <main class="dashboard-container">
+        
+        <!-- Top 3 Podium Container -->
+        <section class="podium-section">
+          <div class="podium-container" id="podium-container">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </section>
+
+        <!-- List for 4th and below -->
+        <section class="list-section">
+          <div class="list-container" id="list-container">
+            <div class="list-header">
+              <span class="rank-col">Rank</span>
+              <span class="name-col">Participant</span>
+              <span class="score-col">Score</span>
+            </div>
+            <div class="list-items" id="list-items">
+               <!-- Dynamically populated by JS -->
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+    
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
