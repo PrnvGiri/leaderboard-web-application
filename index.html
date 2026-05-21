@@ -17,7 +17,43 @@
         <p>Leaderboard & Real-time Scoring</p>
       </header>
 
-      <main class="dashboard-container">
+      <!-- Setup Container -->
+      <section id="setup-container" class="setup-container">
+        <div class="setup-card">
+          <h2>Connect Google Sheet</h2>
+          <p class="setup-hint">
+            Enter the shareable link of your Google Sheet. Make sure that the sheet sharing settings are set to <strong>"Anyone with the link can view"</strong>.<br>
+            Note: Your sheet must have the <strong>Participant Name</strong> in the 1st column (Column A) and the <strong>Score</strong> in the 2nd column (Column B).
+          </p>
+          
+          <form id="setup-form" class="setup-form">
+            <div class="input-group">
+              <input 
+                type="url" 
+                id="sheet-url-input" 
+                placeholder="https://docs.google.com/spreadsheets/d/.../edit" 
+                required 
+                autocomplete="off"
+              />
+              <div class="remember-me-container">
+                <input type="checkbox" id="remember-sheet-checkbox" checked />
+                <label for="remember-sheet-checkbox">Remember this sheet on this browser</label>
+              </div>
+              <button type="submit" id="submit-btn" class="btn-primary">
+                <span>Fetch Leaderboard</span>
+              </button>
+            </div>
+          </form>
+
+          <div id="error-message" class="error-message" style="display: none;"></div>
+
+          <div class="setup-actions">
+            <button id="demo-btn" class="btn-secondary">Use Demo Leaderboard</button>
+          </div>
+        </div>
+      </section>
+
+      <main class="dashboard-container" id="dashboard-container" style="display: none;">
         
         <!-- Top 3 Podium Container -->
         <section class="podium-section">
@@ -39,6 +75,13 @@
             </div>
           </div>
         </section>
+
+        <div class="dashboard-actions">
+          <button id="change-sheet-btn" class="btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            Change Sheet
+          </button>
+        </div>
 
       </main>
     </div>

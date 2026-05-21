@@ -2,10 +2,7 @@ import './style.css';
 import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
 
-// The URL of the Google Sheet exported as CSV
-// The user's Google Sheet URL modified for direct CSV download.
-// NOTE: For this to work without CORS/Auth issues, the sheet must be set to "Anyone with the link can view".
-const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1MVqfQNwMvpAWBQoN1-f_PQlhokXoAD8-dkT8c1veBHk/export?format=csv&gid=0';
+const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1MVqfQNwMvpAWBQoN1-f_PQlhokXoAD8-dkT8c1veBHk/edit#gid=0';
 
 // Mock data fallback in case the sheet is not accessible
 const MOCK_DATA = [
@@ -19,11 +16,82 @@ const MOCK_DATA = [
   { Name: "Jane Doe", Score: 7100 }
 ];
 
-document.querySelector('#app').innerHTML += `
-  <div id="status-message" style="text-align: center; color: var(--text-dim); margin-bottom: 1rem;">
-    Loading live data...
-  </div>
-`;
+let fireworksInterval = null;
+
+function stopContinuousFireworks() {
+  if (fireworksInterval) {
+    clearInterval(fireworksInterval);
+    fireworksInterval = null;
+  }
+}
+
+function getCsvUrl(inputUrl) {
+  if (!inputUrl) return '';
+  const url = inputUrl.trim();
+  if (url.includes('/export?format=csv')) {
+    return url;
+  }
+  const sheetIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!sheetIdMatch) {
+    throw new Error("Invalid Google Sheets URL. Could not extract spreadsheet ID.");
+  }
+  const sheetId = sheetIdMatch[1];
+  let gid = '0';
+  const gidMatch = url.match(/[#&?]gid=([0-9]+)/);
+  if (gidMatch) {
+    gid = gidMatch[1];
+  }
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+}
+
+// DOM Selectors
+const setupContainer = document.getElementById('setup-container');
+const dashboardContainer = document.getElementById('dashboard-container');
+const setupForm = document.getElementById('setup-form');
+const sheetUrlInput = document.getElementById('sheet-url-input');
+const submitBtn = document.getElementById('submit-btn');
+const demoBtn = document.getElementById('demo-btn');
+const changeSheetBtn = document.getElementById('change-sheet-btn');
+const errorMessage = document.getElementById('error-message');
+
+function setLoading(isLoading) {
+  if (isLoading) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+      <span class="loader-spinner"></span>
+      <span>Fetching...</span>
+    `;
+    demoBtn.disabled = true;
+  } else {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `<span>Fetch Leaderboard</span>`;
+    demoBtn.disabled = false;
+  }
+}
+
+function showError(message) {
+  errorMessage.innerHTML = message;
+  errorMessage.style.display = 'block';
+  errorMessage.style.animation = 'none';
+  errorMessage.offsetHeight; // Reflow
+  errorMessage.style.animation = 'shake 0.5s ease-in-out';
+}
+
+function hideError() {
+  errorMessage.style.display = 'none';
+  errorMessage.innerHTML = '';
+}
+
+function showDashboard() {
+  setupContainer.style.display = 'none';
+  dashboardContainer.style.display = 'block';
+}
+
+function showSetup() {
+  dashboardContainer.style.display = 'none';
+  setupContainer.style.display = 'block';
+  stopContinuousFireworks();
+}
 
 function animateValue(obj, start, end, duration) {
   let startTimestamp = null;
@@ -138,6 +206,7 @@ function renderLeaderboard(data) {
 }
 
 function startContinuousFireworks() {
+  stopContinuousFireworks();
   const duration = 15 * 1000;
   const animationEnd = Date.now() + duration;
   const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
@@ -146,11 +215,12 @@ function startContinuousFireworks() {
     return Math.random() * (max - min) + min;
   }
 
-  const interval = setInterval(function() {
+  fireworksInterval = setInterval(function() {
     const timeLeft = animationEnd - Date.now();
 
     if (timeLeft <= 0) {
-      return clearInterval(interval);
+      stopContinuousFireworks();
+      return;
     }
 
     const particleCount = 50 * (timeLeft / duration);
@@ -171,49 +241,104 @@ function startContinuousFireworks() {
   }, 250);
 }
 
-async function loadData() {
-  const statusMessage = document.getElementById('status-message');
+async function loadSheetData(rawUrl, isDemo = false, remember = false) {
+  hideError();
+  setLoading(true);
   
+  let csvUrl;
   try {
-    Papa.parse(SHEET_CSV_URL, {
-      download: true,
-      header: false,
-      complete: (results) => {
-        if (results.data && results.data.length > 1) {
-          // Remove the first row (headers)
-          const dataRows = results.data.slice(1);
-          
-          // Map Column A (index 0) to Name and Column K (index 10) to Score
-          const mappedData = dataRows
-            .filter(row => row && row[0] && row[10]) // Filter out empty or incomplete rows
-            .map(row => ({
-              Name: row[0].trim(),
-              Score: parseInt(String(row[10]).replace(/,/g, ''), 10) || 0
-            }));
-
-          if (mappedData.length > 0) {
-            console.log("Successfully loaded data from Google Sheets!");
-            renderLeaderboard(mappedData);
-          } else {
-            throw new Error("No valid participants found in the sheet.");
-          }
-        } else {
-          throw new Error("Invalid data format or empty sheet.");
-        }
-      },
-      error: (error) => {
-        console.warn("Could not fetch live Google Sheet (it might not be public). Using mock data.", error);
-        if (statusMessage) {
-          statusMessage.innerHTML = "Using demo data. To see live data, make sure the Google Sheet is set to 'Anyone with the link can view'.";
-        }
-        renderLeaderboard(MOCK_DATA);
-      }
-    });
+    csvUrl = getCsvUrl(rawUrl);
   } catch (err) {
-    console.error("Error initiating Papa Parse:", err);
-    renderLeaderboard(MOCK_DATA);
+    setLoading(false);
+    showError(`<strong>Error:</strong> ${err.message}`);
+    return;
+  }
+
+  Papa.parse(csvUrl, {
+    download: true,
+    header: false,
+    complete: (results) => {
+      setLoading(false);
+      if (results.data && results.data.length > 1) {
+        // Remove the first row (headers)
+        const dataRows = results.data.slice(1);
+        
+        // Map Column A (index 0) to Name and Column B (index 1) to Score
+        const mappedData = dataRows
+          .filter(row => row && row[0] && row[1]) // Filter out empty or incomplete rows
+          .map(row => ({
+            Name: row[0].trim(),
+            Score: parseInt(String(row[1]).replace(/,/g, ''), 10) || 0
+          }));
+
+        if (mappedData.length > 0) {
+          console.log("Successfully loaded data from Google Sheets!");
+          if (!isDemo) {
+            if (remember) {
+              localStorage.setItem('leaderboard_sheet_url', rawUrl);
+            } else {
+              localStorage.removeItem('leaderboard_sheet_url');
+            }
+          }
+          showDashboard();
+          renderLeaderboard(mappedData);
+        } else {
+          handleLoadError(new Error("No valid participants found in the sheet. Make sure Column A has names and Column B has scores."));
+        }
+      } else {
+        handleLoadError(new Error("Invalid data format or empty sheet."));
+      }
+    },
+    error: (error) => {
+      setLoading(false);
+      handleLoadError(error);
+    }
+  });
+
+  function handleLoadError(error) {
+    console.error("Error loading sheet:", error);
+    if (isDemo) {
+      console.warn("Using fallback mock data for demo.");
+      showDashboard();
+      renderLeaderboard(MOCK_DATA);
+    } else {
+      showError(`
+        <strong>Failed to load Google Sheet:</strong><br>
+        1. Make sure your Google Sheet is shared as <strong>"Anyone with the link can view"</strong>.<br>
+        2. Ensure the URL is copied correctly from your browser address bar.<br>
+        3. Double check that Column A has participant names and Column B has scores.<br>
+        <span style="font-size: 0.85rem; color: #B91C1C; margin-top: 0.5rem; display: block;">Details: ${error.message || 'Network request failed or CORS policy blocked access'}</span>
+      `);
+    }
   }
 }
 
-// Start loading
-loadData();
+// Event Listeners
+setupForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const url = sheetUrlInput.value.trim();
+  const remember = document.getElementById('remember-sheet-checkbox').checked;
+  if (url) {
+    loadSheetData(url, false, remember);
+  }
+});
+
+demoBtn.addEventListener('click', () => {
+  sheetUrlInput.value = DEFAULT_SHEET_URL;
+  loadSheetData(DEFAULT_SHEET_URL, true, false);
+});
+
+changeSheetBtn.addEventListener('click', () => {
+  localStorage.removeItem('leaderboard_sheet_url');
+  sheetUrlInput.value = '';
+  showSetup();
+});
+
+// Initialization
+const savedUrl = localStorage.getItem('leaderboard_sheet_url');
+if (savedUrl) {
+  sheetUrlInput.value = savedUrl;
+  loadSheetData(savedUrl, false, true);
+} else {
+  showSetup();
+}
